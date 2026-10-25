@@ -5,4 +5,11 @@ services:
       - "4000:4000"
     environment:
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-0}
+      HISTORY_DB_PATH: /data/repo-insight.sqlite
+    volumes:
+      - repo-insight-data:/data
     restart: unless-stopped
+
+volumes:
+  repo-insight-data:

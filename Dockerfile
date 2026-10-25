@@ -1,5 +1,5 @@
 # ---- build the React client ----
-FROM node:22-alpine AS build
+FROM node:22-bookworm-slim AS build
 WORKDIR /app
 COPY server/package*.json server/
 COPY client/package*.json client/
@@ -8,7 +8,7 @@ COPY . .
 RUN npm --prefix client run build
 
 # ---- runtime ----
-FROM node:22-alpine
+FROM node:22-bookworm-slim
 WORKDIR /app
 ENV NODE_ENV=production PORT=4000
 COPY --from=build /app/server ./server
