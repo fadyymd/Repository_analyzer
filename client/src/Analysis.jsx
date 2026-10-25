@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import {
   ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
+  RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, LineChart, Line,
 } from 'recharts';
 import { downloadCSV, downloadJSON, downloadMarkdown, downloadHTML, badgeMarkdown } from './report.js';
 import { COLORS, LABELS, TIPS, scoreColor, fmtDate } from './lib.js';
@@ -59,6 +59,7 @@ export default function Analysis({ data }) {
 
   const s = data.summary;
   const langs = data.languages.slice(0, 10);
+  const history = data.history || [];
 
   return (
     <>
@@ -95,9 +96,37 @@ export default function Analysis({ data }) {
         <Card label="مشاريع متوقفة" value={s.staleCount} hint={`أكثر من ${data.meta.staleDays} يومًا`} />
       </section>
 
+      <div className="notice score-note">
+        الدرجة مؤشر إرشادي مبني على وجود ملفات وعلامات عامة قابلة للتحقق، وليست حكمًا على جودة الكود أو ملاءمة المشروع. المعايير غير المعروفة لا تُحسب كنواقص، وقد لا تحتاج بعض أنواع المشاريع إلى كل المعايير.
+      </div>
+
+      {s.partialTreeRepos > 0 && (
+        <div className="notice">
+          تعذّر فحص شجرة الملفات كاملة في {s.partialTreeRepos} مستودعًا بسبب حد GitHub؛ عُرضت المعايير التي لم يمكن التحقق منها كـ «غير معروف» بدل اعتبارها مفقودة.
+        </div>
+      )}
+
       {s.limited && (
         <div className="notice">تم فحص محتوى أحدث {s.scannedRepos} مستودعًا فقط لتوفير طلبات GitHub. زد العدد من القائمة أعلاه إن أردت.</div>
       )}
+
+      <section className="card">
+        <h3>تاريخ تغيّر المؤشر خلال آخر 90 يومًا</h3>
+        {history.length ? (
+          <div className="chart" dir="ltr">
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart data={history}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="analyzedAt" tickFormatter={(value) => value.slice(0, 10)} />
+                <YAxis domain={[0, 100]} />
+                <Tooltip labelFormatter={(value) => new Date(value).toLocaleString()} formatter={(value) => [`${value}/100`, 'المؤشر']} />
+                <Line type="monotone" dataKey="avgScore" name="المؤشر" stroke="#6366f1" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        ) : <p className="muted">سيظهر الاتجاه بعد إجراء تحليلات جديدة. تُحفظ لقطة واحدة عند كل تحليل غير مخزّن مؤقتًا.</p>}
+        <p className="muted small">السجل مشترك على هذا الخادم، ويحتفظ بمتوسط الدرجة وعدد المستودعات فقط، دون حفظ تفاصيل المستودعات، لمدة 90 يومًا.</p>
+      </section>
 
       <section className="grid charts">
         <div className="card">
@@ -280,9 +309,10 @@ export default function Analysis({ data }) {
                       <td colSpan={5 + CHECK_COLUMNS.length + 1}>
                         <div className="detail-grid">
                           {Object.keys(LABELS).map((k) => (
-                            <div key={k}><Badge state={r.checks[k]} /> {LABELS[k]} <span className="muted small">({r.points[k]}/{data.meta.weights[k]})</span></div>
+                            <div key={k}><Badge state={r.checks[k]} /> {LABELS[k]} <span className="muted small">({r.checks[k] === 'unknown' ? 'غير محسوب' : `${r.points[k]}/${data.meta.weights[k]}`})</span></div>
                           ))}
                         </div>
+                        <p className="muted small">احتُسبت الدرجة من {r.scoreCoverage}% من أوزان المعايير الممكن التحقق منها.</p>
                         {r.issues.length > 0 && <ul className="small">{r.issues.map((k) => <li key={k}>{TIPS[k]}</li>)}</ul>}
                       </td>
                     </tr>

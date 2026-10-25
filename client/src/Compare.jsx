@@ -46,6 +46,9 @@ export default function Compare() {
 
       {res && !loading && (
         <>
+          <div className="notice score-note">
+            درجات الاكتمال مؤشرات إرشادية مبنية على المعايير القابلة للتحقق؛ المعايير غير المعروفة لا تُحسب كنواقص، والنتيجة ليست حكمًا على جودة الكود أو ملاءمة كل معيار لنوع المشروع.
+          </div>
           <section className="card">
             <table className="cmp">
               <thead>

@@ -46,6 +46,7 @@ export function buildMarkdown(data) {
   L.push(`- عدد اللغات المستخدمة: **${s.languagesCount}**`);
   L.push(`- المستودعات التي تم فحصها بعمق: **${s.scannedRepos}**`);
   L.push(`- متوسط درجة الاكتمال: **${s.avgScore ?? '-'} / 100** (التقدير ${s.grade ?? '-'})`);
+  L.push('', '> الدرجة مؤشر إرشادي للمعايير القابلة للتحقق فقط؛ لا تقيس جودة الكود، والمعايير غير المعروفة لا تُحسب كنواقص.', '');
   L.push(`- مستودعات لم تُحدَّث منذ أكثر من ${data.meta.staleDays} يومًا: **${s.staleCount}**`, '');
 
   L.push('## توزيع اللغات', '', '| اللغة | عدد المستودعات | النسبة |', '|---|---|---|');
@@ -103,6 +104,7 @@ table{width:100%;border-collapse:collapse;margin:12px 0}th,td{border-bottom:1px 
 .k{display:flex;gap:12px;flex-wrap:wrap}.k div{flex:1;min-width:130px;background:#f4f5fb;border-radius:10px;padding:10px;text-align:center}
 .k b{display:block;font-size:1.5rem;color:#6366f1}@media print{body{margin:0}}</style></head><body>
 <h1>تقرير مستودعات ${e(user.name || user.login)} (@${e(user.login)})</h1><p>${fmtDate(data.meta.generatedAt)}</p>
+<p style="color:#6b7280">درجة الاكتمال مؤشر إرشادي للمعايير القابلة للتحقق فقط، ولا تقيس جودة الكود؛ المعايير غير المعروفة لا تُحسب كنواقص.</p>
 <div class="k"><div><b>${s.totalRepos}</b>مستودع</div><div><b>${s.totalStars}</b>Stars</div><div><b>${s.totalForks}</b>Forks</div>
 <div><b>${s.languagesCount}</b>لغة</div><div><b>${s.avgScore ?? '-'}</b>متوسط الاكتمال (${s.grade ?? '-'})</div><div><b>${s.staleCount}</b>متوقف</div></div>
 <h2>اللغات</h2><table>${data.languages.map((l) => `<tr><td>${e(l.name)}</td><td>${l.count}</td><td>${l.percent}%</td></tr>`).join('')}</table>
