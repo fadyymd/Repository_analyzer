@@ -1,0 +1,8 @@
+services:
+  repo-insight:
+    build: .
+    ports:
+      - "4000:4000"
+    environment:
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+    restart: unless-stopped
