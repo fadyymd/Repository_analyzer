@@ -10,10 +10,23 @@ try { process.loadEnvFile(path.join(__dirname, '..', '.env')); } catch { /* no .
 
 const { analyzeUser } = await import('./analyzer.js');
 const { GitHubError } = await import('./github.js');
+const { createHistoryStore, HISTORY_RETENTION_DAYS } = await import('./history.js');
 
 const app = express();
 app.disable('x-powered-by');
 app.use(cors());
+
+const trustProxyHops = process.env.TRUST_PROXY_HOPS ? Number(process.env.TRUST_PROXY_HOPS) : 0;
+if (!Number.isInteger(trustProxyHops) || trustProxyHops < 0 || trustProxyHops > 10) {
+  throw new Error('TRUST_PROXY_HOPS must be an integer between 0 and 10.');
+}
+app.set('trust proxy', trustProxyHops);
+
+const historyPath = path.resolve(
+  __dirname,
+  process.env.HISTORY_DB_PATH || path.join('data', 'repo-insight.sqlite')
+);
+const historyStore = createHistoryStore(historyPath);
 
 const USERNAME_RE = /^[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}$/i;
 const cache = new Map(); // key -> { at, data }
@@ -36,6 +49,14 @@ async function getAnalysis(username, max) {
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < TTL) return { ...hit.data, cached: true };
   const data = await analyzeUser(username, { max });
+  historyStore.save({
+    login: data.user.login,
+    analyzedAt: data.meta.generatedAt,
+    avgScore: data.summary.avgScore,
+    grade: data.summary.grade,
+    scannedRepos: data.summary.scannedRepos,
+    totalRepos: data.summary.totalRepos,
+  });
   cache.set(key, { at: Date.now(), data });
   return data;
 }
@@ -46,14 +67,31 @@ function handleError(err, res) {
   return res.status(500).json({ error: 'حدث خطأ غير متوقع أثناء التحليل.' });
 }
 
-app.get('/api/health', (_req, res) => res.json({ ok: true, token: Boolean(process.env.GITHUB_TOKEN) }));
+app.get('/api/health', (_req, res) => res.json({
+  ok: true,
+  token: Boolean(process.env.GITHUB_TOKEN),
+  historyRetentionDays: HISTORY_RETENTION_DAYS,
+  trustProxyHops,
+}));
 
 app.get('/api/analyze/:username', limiter(40, 10 * 60 * 1000), async (req, res) => {
   const { username } = req.params;
   if (!USERNAME_RE.test(username)) return res.status(400).json({ error: 'اسم مستخدم GitHub غير صالح.' });
   const max = Math.min(Math.max(parseInt(req.query.max, 10) || 30, 5), 60);
   try {
-    res.json(await getAnalysis(username, max));
+    const data = await getAnalysis(username, max);
+    res.json({ ...data, history: historyStore.list(data.user.login) });
+  } catch (err) {
+    handleError(err, res);
+  }
+});
+
+app.get('/api/history/:username', limiter(60, 10 * 60 * 1000), (req, res) => {
+  if (!USERNAME_RE.test(req.params.username)) {
+    return res.status(400).json({ error: 'اسم مستخدم GitHub غير صالح.' });
+  }
+  try {
+    res.json({ login: req.params.username, history: historyStore.list(req.params.username) });
   } catch (err) {
     handleError(err, res);
   }

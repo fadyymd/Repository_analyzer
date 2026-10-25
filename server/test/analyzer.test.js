@@ -4,8 +4,8 @@ import { detectFiles, evaluateRepo, gradeOf, WEIGHTS } from '../analyzer.js';
 
 const NOW = new Date('2026-10-25').getTime();
 const isoDaysAgo = (d) => new Date(NOW - d * 86400000).toISOString();
-const FULL = { hasReadme: true, readmeSize: 900, hasLicenseFile: true, hasTests: true, hasCI: true, hasGitignore: true };
-const NONE = { hasReadme: false, readmeSize: 0, hasLicenseFile: false, hasTests: false, hasCI: false, hasGitignore: false };
+const FULL = { hasReadme: true, readmeSize: 900, hasLicenseFile: true, hasTests: true, hasCI: true, hasGitignore: true, truncated: false };
+const NONE = { hasReadme: false, readmeSize: 0, hasLicenseFile: false, hasTests: false, hasCI: false, hasGitignore: false, truncated: false };
 
 test('detectFiles finds README, LICENSE, tests, CI and .gitignore', () => {
   const f = detectFiles([
@@ -17,6 +17,19 @@ test('detectFiles finds README, LICENSE, tests, CI and .gitignore', () => {
 
 test('detectFiles ignores nested README and finds nothing in a bare repo', () => {
   assert.deepEqual(detectFiles(['docs/README.md', 'index.js']), NONE);
+});
+
+test('truncated trees leave missing file checks unknown', () => {
+  const files = detectFiles([{ path: 'src/app.js', size: 40 }], { truncated: true });
+  const ev = evaluateRepo({ description: 'A useful project description', topics: ['tool'], pushed_at: isoDaysAgo(1) }, files, NOW);
+  assert.equal(ev.checks.readme, 'unknown');
+  assert.equal(ev.checks.tests, 'unknown');
+  assert.equal(ev.checks.license, 'unknown');
+  assert.equal(ev.checks.ci, 'unknown');
+  assert.equal(ev.checks.gitignore, 'unknown');
+  assert.equal(ev.checks.description, 'ok');
+  assert.equal(ev.scoreCoverage, 33);
+  assert.equal(ev.score, 100);
 });
 
 test('a complete, active repo scores 100 (grade A)', () => {

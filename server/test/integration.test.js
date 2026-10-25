@@ -14,6 +14,7 @@ const REPOS = [
   repo(2, 'bare', { language: 'Python', pushed_at: iso(700) }),
   repo(3, 'forked', { fork: true, language: null }),
   repo(4, 'empty', { language: null }),
+  repo(5, 'huge', { pushed_at: iso(1) }),
 ];
 const TREES = {
   good: [
@@ -30,21 +31,27 @@ test('analyzeUser aggregates a mocked GitHub account', async () => {
     if (u.includes('/users/u/repos')) return json(REPOS);
     if (u.endsWith('/users/u')) return json({ login: 'u', name: 'U', avatar_url: '', html_url: 'https://github.com/u', followers: 1, public_repos: 4 });
     const m = u.match(/repos\/u\/([^/]+)\/git\/trees/);
-    if (m && TREES[m[1]]) return json({ tree: TREES[m[1]] });
+    if (m && m[1] === 'huge') return json({ tree: [{ path: 'src/main.js', size: 100 }], truncated: true });
+    if (m && TREES[m[1]]) return json({ tree: TREES[m[1]], truncated: false });
     return json({}, 409); // empty repo
   };
 
   const out = await analyzeUser('u', { max: 30 });
-  assert.equal(out.summary.totalRepos, 4);
+  assert.equal(out.summary.totalRepos, 5);
   assert.equal(out.summary.forkedRepos, 1);
   assert.equal(out.summary.totalStars, 12);
-  assert.equal(out.summary.scannedRepos, 3);
+  assert.equal(out.summary.scannedRepos, 4);
+  assert.equal(out.summary.partialTreeRepos, 1);
   assert.equal(out.summary.staleCount, 1);
   assert.equal(out.summary.missingReadme, 2);
   assert.equal(out.repos.find((r) => r.name === 'good').score, 100);
   assert.equal(out.repos.find((r) => r.name === 'forked').score, null);
+  const huge = out.repos.find((r) => r.name === 'huge');
+  assert.equal(huge.treeTruncated, true);
+  assert.equal(huge.checks.readme, 'unknown');
+  assert.equal(huge.checks.tests, 'unknown');
   assert.equal(out.topStarred[0].name, 'good');
-  assert.equal(out.languages.find((l) => l.name === 'JavaScript').count, 1);
+  assert.equal(out.languages.find((l) => l.name === 'JavaScript').count, 2);
   assert.equal(out.languages.find((l) => l.name === 'Python').count, 1);
   assert.equal(out.summary.missingCI, 2);
   assert.equal(out.summary.grade, 'F');

@@ -70,12 +70,15 @@ export async function fetchAllRepos(username) {
 
 export const fetchUser = (username) => gh(`/users/${encodeURIComponent(username)}`);
 
-/** File list [{path, size}] of the default branch, or null when unavailable/empty. */
+/** File list and GitHub's truncation status, or null when unavailable/empty. */
 export async function fetchTree(owner, repo, branch) {
   const data = await gh(
     `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/git/trees/${encodeURIComponent(branch)}?recursive=1`,
     { soft: [404, 409] }
   );
   if (!data || !Array.isArray(data.tree)) return null;
-  return data.tree.map((n) => ({ path: n.path, size: n.size ?? 0, type: n.type }));
+  return {
+    nodes: data.tree.map((n) => ({ path: n.path, size: n.size ?? 0, type: n.type })),
+    truncated: Boolean(data.truncated),
+  };
 }

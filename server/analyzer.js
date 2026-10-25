@@ -42,7 +42,7 @@ export const daysSince = (iso, now = Date.now()) =>
   iso ? Math.floor((now - new Date(iso).getTime()) / 86400000) : Infinity;
 
 /** Accepts ['a/b.js', ...] or [{path, size}, ...] */
-export function detectFiles(nodes) {
+export function detectFiles(nodes, { truncated = false } = {}) {
   const list = nodes.map((n) => (typeof n === 'string' ? { path: n, size: 0 } : n));
   const root = list.filter((n) => !n.path.includes('/'));
   const readme = root.find((n) => README_RE.test(n.path));
@@ -53,6 +53,7 @@ export function detectFiles(nodes) {
     hasTests: list.some((n) => TEST_PATTERNS.some((re) => re.test(n.path))),
     hasCI: list.some((n) => CI_PATTERNS.some((re) => re.test(n.path))),
     hasGitignore: root.some((n) => n.path === '.gitignore'),
+    truncated,
   };
 }
 
@@ -65,13 +66,14 @@ const EMPTY_FILES = { hasReadme: false, readmeSize: 0, hasLicenseFile: false, ha
 export function evaluateRepo(repo, files, now = Date.now()) {
   const desc = (repo.description || '').trim();
   const idle = daysSince(repo.pushed_at, now);
-  const known = (ok) => (files ? (ok ? 'ok' : 'missing') : 'unknown');
+  const known = (ok) => (files ? (ok ? 'ok' : files.truncated ? 'unknown' : 'missing') : 'unknown');
+  const readmeCheck = !files ? 'unknown' : files.hasReadme ? 'ok' : files.truncated ? 'unknown' : 'missing';
 
   const checks = {
     description: desc.length >= MIN_DESCRIPTION_LENGTH ? 'ok' : desc.length > 0 ? 'weak' : 'missing',
-    readme: known(files?.hasReadme),
-    readmeDepth: !files ? 'unknown' : !files.hasReadme ? 'missing' : files.readmeSize >= MIN_README_BYTES ? 'ok' : 'weak',
-    license: repo.license || files?.hasLicenseFile ? 'ok' : files ? 'missing' : 'unknown',
+    readme: readmeCheck,
+    readmeDepth: !files || (!files.hasReadme && files.truncated) ? 'unknown' : !files.hasReadme ? 'missing' : files.readmeSize >= MIN_README_BYTES ? 'ok' : 'weak',
+    license: repo.license || files?.hasLicenseFile ? 'ok' : !files || files.truncated ? 'unknown' : 'missing',
     tests: known(files?.hasTests),
     topics: (repo.topics || []).length > 0 ? 'ok' : 'missing',
     // archived repos are intentionally frozen, so they are not penalised for inactivity
@@ -85,12 +87,16 @@ export function evaluateRepo(repo, files, now = Date.now()) {
     points[key] = checks[key] === 'ok' ? w : checks[key] === 'weak' ? Math.round(w / 2) : 0;
   }
 
-  const score = Object.values(points).reduce((a, b) => a + b, 0);
+  const availablePoints = Object.entries(WEIGHTS)
+    .filter(([key]) => checks[key] !== 'unknown')
+    .reduce((sum, [, weight]) => sum + weight, 0);
+  const earnedPoints = Object.values(points).reduce((a, b) => a + b, 0);
+  const score = availablePoints ? Math.round((earnedPoints / availablePoints) * 100) : null;
   const issues = Object.entries(checks)
     .filter(([, v]) => v === 'missing' || v === 'weak' || v === 'stale')
     .map(([k]) => k);
 
-  return { checks, points, score, grade: gradeOf(score), issues };
+  return { checks, points, score, scoreCoverage: availablePoints, grade: gradeOf(score), issues };
 }
 
 /* ---------- helpers ---------- */
@@ -140,7 +146,7 @@ export async function analyzeUser(username, { max = 30 } = {}) {
     let files = null;
     try {
       const tree = await fetchTree(r.owner.login, r.name, r.default_branch);
-      files = tree ? detectFiles(tree) : { ...EMPTY_FILES, empty: true };
+      files = tree ? detectFiles(tree.nodes, { truncated: tree.truncated }) : { ...EMPTY_FILES, empty: true };
     } catch (e) {
       if (e.status === 429) throw e; // surface rate-limit to the user
       files = null;
@@ -152,7 +158,7 @@ export async function analyzeUser(username, { max = 30 } = {}) {
     const base = shape(r);
     if (r.fork || !scanSet.has(r.id)) return { ...base, scanned: false, score: null, grade: null, checks: null, points: null, issues: [] };
     const files = scanned.get(r.id);
-    return { ...base, scanned: files !== null, ...evaluateRepo(r, files, now) };
+    return { ...base, scanned: files !== null, treeTruncated: Boolean(files?.truncated), ...evaluateRepo(r, files, now) };
   });
 
   /* aggregates */
@@ -232,6 +238,7 @@ export async function analyzeUser(username, { max = 30 } = {}) {
       totalForks: repos.reduce((s, r) => s + r.forks, 0),
       languagesCount: languages.filter((l) => l.name !== 'غير محدد').length,
       scannedRepos: scored.length,
+      partialTreeRepos: scored.filter((r) => r.treeTruncated).length,
       avgScore,
       grade: gradeOf(avgScore),
       staleCount: stale.length,
