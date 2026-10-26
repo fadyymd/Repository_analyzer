@@ -26,7 +26,7 @@ export function createRateLimiter(maxRequests, windowMs, { maxKeys = 10_000, now
 
     bucket.count++;
     if (bucket.count > maxRequests) {
-      return res.status(429).json({ error: 'طلبات كثيرة جدًا. حاول بعد بضع دقائق.' });
+      return res.status(429).json({ error: 'Too many requests. Please try again in a few minutes.' });
     }
     next();
   }

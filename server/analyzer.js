@@ -170,7 +170,7 @@ export async function analyzeUser(username, { max = 30 } = {}) {
   /* aggregates */
   const langMap = new Map();
   for (const r of repos) {
-    const key = r.language || 'غير محدد';
+    const key = r.language || 'Unknown';
     langMap.set(key, (langMap.get(key) || 0) + 1);
   }
   const languages = [...langMap.entries()]
@@ -242,7 +242,7 @@ export async function analyzeUser(username, { max = 30 } = {}) {
       forkedRepos: repos.length - own.length,
       totalStars: repos.reduce((s, r) => s + r.stars, 0),
       totalForks: repos.reduce((s, r) => s + r.forks, 0),
-      languagesCount: languages.filter((l) => l.name !== 'غير محدد').length,
+      languagesCount: languages.filter((l) => l.name !== 'Unknown').length,
       scannedRepos: scored.length,
       partialTreeRepos: scored.filter((r) => r.treeTruncated).length,
       avgScore,

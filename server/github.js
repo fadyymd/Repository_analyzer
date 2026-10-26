@@ -31,9 +31,9 @@ export async function gh(path, { soft = [] } = {}) {
     res = await fetch(API + path, { headers: headers(), signal: AbortSignal.timeout(15_000) });
   } catch (err) {
     if (err.name === 'TimeoutError' || err.name === 'AbortError') {
-      throw new GitHubError(504, 'انتهت مهلة الاتصال بـ GitHub. حاول مرة أخرى.');
+      throw new GitHubError(504, 'The request to GitHub timed out. Please try again.');
     }
-    throw new GitHubError(502, 'تعذّر الاتصال بـ GitHub. تحقق من الاتصال وحاول مرة أخرى.');
+    throw new GitHubError(502, 'Could not connect to GitHub. Check your connection and try again.');
   }
 
   const remaining = res.headers.get('x-ratelimit-remaining');
@@ -45,7 +45,7 @@ export async function gh(path, { soft = [] } = {}) {
   if (soft.includes(res.status)) return null;
 
   if (res.status === 404) {
-    throw new GitHubError(404, 'المستخدم أو المورد غير موجود على GitHub.');
+    throw new GitHubError(404, 'The GitHub user or resource was not found.');
   }
   if (res.status === 403 || res.status === 429) {
     if (remaining === '0') {
@@ -53,13 +53,13 @@ export async function gh(path, { soft = [] } = {}) {
       const mins = reset ? Math.max(1, Math.ceil((reset - Date.now()) / 60000)) : null;
       throw new GitHubError(
         429,
-        `تم تجاوز حد طلبات GitHub.${mins ? ` أعد المحاولة بعد حوالي ${mins} دقيقة.` : ''} ` +
-          'أضف GITHUB_TOKEN في ملف .env لرفع الحد إلى 5000 طلب/ساعة.'
+        `The GitHub API rate limit has been exceeded.${mins ? ` Try again in about ${mins} minute(s).` : ''} ` +
+          'Add GITHUB_TOKEN to your .env file to raise the limit to 5,000 requests per hour.'
       );
     }
-    throw new GitHubError(403, 'رفض GitHub الطلب (403).');
+    throw new GitHubError(403, 'GitHub denied the request (403).');
   }
-  if (!res.ok) throw new GitHubError(res.status, `خطأ من GitHub (${res.status}).`);
+  if (!res.ok) throw new GitHubError(res.status, `GitHub returned an error (${res.status}).`);
   return res.json();
 }
 

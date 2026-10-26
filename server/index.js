@@ -83,7 +83,7 @@ async function getAnalysis(username, max) {
   const pending = inFlight.get(key);
   if (pending) return { ...(await pending), cached: true };
   if (inFlight.size >= MAX_CONCURRENT_ANALYSES) {
-    throw new GitHubError(503, 'الخادم مشغول حاليًا. حاول مرة أخرى بعد قليل.');
+    throw new GitHubError(503, 'The server is busy right now. Please try again shortly.');
   }
 
   const analysis = (async () => {
@@ -111,7 +111,7 @@ async function getAnalysis(username, max) {
 function handleError(err, res) {
   if (err instanceof GitHubError) return res.status(err.status).json({ error: err.message });
   console.error(err);
-  return res.status(500).json({ error: 'حدث خطأ غير متوقع أثناء التحليل.' });
+  return res.status(500).json({ error: 'An unexpected error occurred during analysis.' });
 }
 
 app.get('/api/health', (_req, res) => res.json({
@@ -121,10 +121,10 @@ app.get('/api/health', (_req, res) => res.json({
 
 app.get('/api/analyze/:username', analyzeLimiter, async (req, res) => {
   const { username } = req.params;
-  if (!USERNAME_RE.test(username)) return res.status(400).json({ error: 'اسم مستخدم GitHub غير صالح.' });
+  if (!USERNAME_RE.test(username)) return res.status(400).json({ error: 'Invalid GitHub username.' });
   const maxParam = req.query.max;
   if (maxParam !== undefined && (typeof maxParam !== 'string' || !/^\d+$/.test(maxParam))) {
-    return res.status(400).json({ error: 'عدد المستودعات يجب أن يكون رقمًا صحيحًا بين 5 و60.' });
+    return res.status(400).json({ error: 'Repository count must be a whole number between 5 and 60.' });
   }
   const max = Math.min(Math.max(maxParam === undefined ? 30 : Number(maxParam), 5), 60);
   try {
@@ -137,7 +137,7 @@ app.get('/api/analyze/:username', analyzeLimiter, async (req, res) => {
 
 app.get('/api/history/:username', historyLimiter, (req, res) => {
   if (!USERNAME_RE.test(req.params.username)) {
-    return res.status(400).json({ error: 'اسم مستخدم GitHub غير صالح.' });
+    return res.status(400).json({ error: 'Invalid GitHub username.' });
   }
   try {
     res.set('Cache-Control', 'no-store').json({ login: req.params.username, history: historyStore.list(req.params.username) });
