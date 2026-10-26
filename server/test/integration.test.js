@@ -24,7 +24,9 @@ const TREES = {
   bare: [{ path: 'main.py', size: 5 }],
 };
 
-test('analyzeUser aggregates a mocked GitHub account', async () => {
+test('analyzeUser aggregates a mocked GitHub account', async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
   globalThis.fetch = async (url) => {
     const u = String(url);
     const json = (body, status = 200) => ({ ok: status < 400, status, headers: new Headers(), json: async () => body });
@@ -58,4 +60,29 @@ test('analyzeUser aggregates a mocked GitHub account', async () => {
   assert.equal(out.coverage.readme, 33);
   assert.ok(out.recommendations.length > 0 && out.recommendations[0].gain >= out.recommendations.at(-1).gain);
   assert.ok(out.createdByYear.length > 0);
+});
+
+test('analyzeUser stops scheduling tree requests after a timeout and waits for active requests', async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  const repos = Array.from({ length: 8 }, (_, i) => repo(i + 1, `repo-${i}`));
+  let treeRequests = 0;
+  globalThis.fetch = async (url) => {
+    const address = String(url);
+    const json = (body) => ({ ok: true, status: 200, headers: new Headers(), json: async () => body });
+    if (address.includes('/users/u/repos')) return json(repos);
+    if (address.endsWith('/users/u')) return json({ login: 'u', public_repos: repos.length });
+    treeRequests++;
+    if (treeRequests === 1) {
+      const error = new Error('timed out');
+      error.name = 'TimeoutError';
+      throw error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    return json({ tree: [], truncated: false });
+  };
+
+  await assert.rejects(analyzeUser('u', { max: 8 }), { status: 504 });
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  assert.equal(treeRequests, 5);
 });

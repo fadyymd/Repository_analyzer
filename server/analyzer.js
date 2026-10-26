@@ -103,13 +103,19 @@ export function evaluateRepo(repo, files, now = Date.now()) {
 async function mapPool(items, limit, fn) {
   const out = new Array(items.length);
   let i = 0;
+  let failure;
   const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
-    while (i < items.length) {
+    while (i < items.length && !failure) {
       const idx = i++;
-      out[idx] = await fn(items[idx], idx);
+      try {
+        out[idx] = await fn(items[idx], idx);
+      } catch (err) {
+        failure ??= err;
+      }
     }
   });
   await Promise.all(workers);
+  if (failure) throw failure;
   return out;
 }
 
@@ -148,7 +154,7 @@ export async function analyzeUser(username, { max = 30 } = {}) {
       const tree = await fetchTree(r.owner.login, r.name, r.default_branch);
       files = tree ? detectFiles(tree.nodes, { truncated: tree.truncated }) : { ...EMPTY_FILES, empty: true };
     } catch (e) {
-      if (e.status === 429) throw e; // surface rate-limit to the user
+      if ([429, 504].includes(e.status)) throw e; // surface rate limits and timeouts to the user
       files = null;
     }
     scanned.set(r.id, files);

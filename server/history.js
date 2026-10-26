@@ -21,6 +21,8 @@ export function createHistoryStore(filename, { retentionDays = HISTORY_RETENTION
     );
     CREATE INDEX IF NOT EXISTS analysis_history_login_date
       ON analysis_history (login, analyzed_at);
+    CREATE INDEX IF NOT EXISTS analysis_history_date
+      ON analysis_history (analyzed_at);
   `);
 
   const insert = db.prepare(`
