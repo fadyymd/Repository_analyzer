@@ -126,8 +126,10 @@ button.chip.btn:hover { border-color: var(--primary); background: var(--primary-
 .loader-ring { width: 34px; height: 34px; }
 .button-spinner { width: 15px; height: 15px; border-width: 2px; border-top-color: white; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.app-footer { margin-top: 26px; text-align: center; color: var(--muted); font-size: .72rem; }
-.app-footer span { padding: 0 4px; color: var(--primary); }
+.app-footer { margin-top: 26px; text-align: center; color: var(--muted); font-size: .75rem; }
+.app-footer > span { padding: 0 4px; color: var(--primary); }
+.footer-product { color: var(--text); font-weight: 700; }
+.footer-copyright { margin-top: 3px; color: var(--muted); font-size: .68rem; }
 .card { margin-bottom: 16px; padding: 19px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); box-shadow: 0 4px 14px rgba(25, 39, 75, .025); }
 .card h3 { margin: 0 0 13px; font-size: 1rem; font-weight: 700; letter-spacing: -.015em; }
 .profile { display: flex; align-items: center; gap: 17px; flex-wrap: wrap; padding: 21px; }

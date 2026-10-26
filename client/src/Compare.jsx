@@ -3,14 +3,14 @@ import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadius
 import { LABELS, cleanName, fetchAnalysis, scoreColor } from './lib.js';
 
 const METRICS = [
-  ['المستودعات', (s) => s.totalRepos, true],
+  ['Repositories', (s) => s.totalRepos, true],
   ['Stars', (s) => s.totalStars, true],
   ['Forks', (s) => s.totalForks, true],
-  ['اللغات', (s) => s.languagesCount, true],
-  ['متوسط الاكتمال', (s) => s.avgScore ?? -1, true, (v) => (v < 0 ? '-' : `${v}%`)],
-  ['مشاريع متوقفة', (s) => s.staleCount, false],
-  ['بدون README', (s) => s.missingReadme, false],
-  ['بدون اختبارات', (s) => s.missingTests, false],
+  ['Languages', (s) => s.languagesCount, true],
+  ['Average completeness', (s) => s.avgScore ?? -1, true, (v) => (v < 0 ? '-' : `${v}%`)],
+  ['Inactive projects', (s) => s.staleCount, false],
+  ['Missing README', (s) => s.missingReadme, false],
+  ['Missing tests', (s) => s.missingTests, false],
 ];
 
 export default function Compare() {
@@ -37,24 +37,24 @@ export default function Compare() {
     <section className="comparison">
       <div className="comparison-heading">
         <div>
-          <span className="eyebrow"><span className="eyebrow-line" /> مقارنة الحسابات</span>
-          <h2>أي الحسابين يحقق أداءً أفضل؟</h2>
-          <p>قارن مؤشرات المشاريع والنشاط والاكتمال جنبًا إلى جنب.</p>
+          <span className="eyebrow"><span className="eyebrow-line" /> ACCOUNT COMPARISON</span>
+          <h2>How do these accounts compare?</h2>
+          <p>Compare repository health, activity, and completeness side by side.</p>
         </div>
       </div>
       <form onSubmit={run} className="search comparison-search">
-        <input dir="ltr" value={a} onChange={(e) => setA(e.target.value)} placeholder="المستخدم الأول" aria-label="المستخدم الأول" />
+        <input dir="ltr" value={a} onChange={(e) => setA(e.target.value)} placeholder="First GitHub username" aria-label="First GitHub username" />
         <span className="vs">VS</span>
-        <input dir="ltr" value={b} onChange={(e) => setB(e.target.value)} placeholder="المستخدم الثاني" aria-label="المستخدم الثاني" />
-        <button disabled={loading || !a.trim() || !b.trim()}>{loading ? 'جارٍ المقارنة…' : 'قارن'}</button>
+        <input dir="ltr" value={b} onChange={(e) => setB(e.target.value)} placeholder="Second GitHub username" aria-label="Second GitHub username" />
+        <button disabled={loading || !a.trim() || !b.trim()}>{loading ? 'Comparing…' : 'Compare'}</button>
       </form>
-      {error && <div className="error">⚠ {error}</div>}
-      {loading && <div className="loading">يتم تحليل الحسابين…</div>}
+      {error && <div className="error" role="alert">⚠ {error}</div>}
+      {loading && <div className="loading" role="status" aria-live="polite">Analyzing both accounts…</div>}
 
       {res && !loading && (
         <>
           <div className="notice score-note">
-            درجات الاكتمال مؤشرات إرشادية مبنية على المعايير القابلة للتحقق؛ المعايير غير المعروفة لا تُحسب كنواقص، والنتيجة ليست حكمًا على جودة الكود أو ملاءمة كل معيار لنوع المشروع.
+            Completeness scores are indicative and use verifiable criteria only. Unknown checks are not counted as missing, and scores do not judge code quality or whether every criterion suits a project.
           </div>
           <section className="card">
             <table className="cmp">
@@ -80,14 +80,14 @@ export default function Compare() {
                   );
                 })}
                 <tr>
-                  <td className="muted">التقدير</td>
+                  <td className="muted">Grade</td>
                   {res.map((r) => <td key={r.user.login} style={{ color: scoreColor(r.summary.avgScore ?? 0), fontWeight: 700 }}>{r.summary.grade || '-'}</td>)}
                 </tr>
               </tbody>
             </table>
           </section>
           <section className="card">
-            <h3>مقارنة جودة المستودعات</h3>
+            <h3>Repository quality comparison</h3>
             <div className="chart" dir="ltr">
               <ResponsiveContainer width="100%" height={320}>
                 <RadarChart data={radar} outerRadius={110}>

@@ -72,9 +72,9 @@ export default function Analysis({ data }) {
           </h2>
           {data.user.bio && <p>{data.user.bio}</p>}
           <p className="muted small">
-            المتابعون: {data.user.followers}
-            {data.meta.rateRemaining != null && ` · طلبات GitHub المتبقية: ${data.meta.rateRemaining}/${data.meta.rateLimit}`}
-            {data.cached && ' · من الذاكرة المؤقتة'}
+            {data.user.followers.toLocaleString()} followers
+            {data.meta.rateRemaining != null && ` · GitHub API requests remaining: ${data.meta.rateRemaining}/${data.meta.rateLimit}`}
+            {data.cached && ' · Cached result'}
           </p>
         </div>
         <div className="downloads">
@@ -82,36 +82,36 @@ export default function Analysis({ data }) {
           <button onClick={() => downloadHTML(data)}>⬇ HTML</button>
           <button onClick={() => downloadCSV(data)}>⬇ CSV</button>
           <button onClick={() => downloadJSON(data)}>⬇ JSON</button>
-          <button className="ghost" onClick={copyBadge} title="شارة SVG تُوضع في README الخاص بك">{copied ? '✔ تم النسخ' : '🏷 نسخ شارة README'}</button>
+          <button className="ghost" onClick={copyBadge} title="Copy an SVG badge for your README">{copied ? '✔ Copied' : '🏷 Copy README badge'}</button>
         </div>
       </section>
 
       <section className="grid stats">
-        <Card label="المستودعات العامة" value={s.totalRepos} hint={`${s.forkedRepos} منها Fork`} />
-        <Card label="إجمالي Stars" value={s.totalStars} />
-        <Card label="إجمالي Forks" value={s.totalForks} />
-        <Card label="عدد اللغات" value={s.languagesCount} />
-        <Card label="متوسط الاكتمال" value={s.avgScore !== null ? `${s.avgScore}%` : '-'} hint={`على ${s.scannedRepos} مستودعًا`} color={s.avgScore !== null ? scoreColor(s.avgScore) : undefined} />
-        <Card label="التقدير العام" value={s.grade || '-'} color={s.avgScore !== null ? scoreColor(s.avgScore) : undefined} />
-        <Card label="مشاريع متوقفة" value={s.staleCount} hint={`أكثر من ${data.meta.staleDays} يومًا`} />
+        <Card label="Public repositories" value={s.totalRepos} hint={`${s.forkedRepos} forks`} />
+        <Card label="Total stars" value={s.totalStars.toLocaleString()} />
+        <Card label="Total forks" value={s.totalForks.toLocaleString()} />
+        <Card label="Languages" value={s.languagesCount} />
+        <Card label="Average completeness" value={s.avgScore !== null ? `${s.avgScore}%` : '-'} hint={`Across ${s.scannedRepos} scanned repositories`} color={s.avgScore !== null ? scoreColor(s.avgScore) : undefined} />
+        <Card label="Overall grade" value={s.grade || '-'} color={s.avgScore !== null ? scoreColor(s.avgScore) : undefined} />
+        <Card label="Inactive projects" value={s.staleCount} hint={`Older than ${data.meta.staleDays} days`} />
       </section>
 
       <div className="notice score-note">
-        الدرجة مؤشر إرشادي مبني على وجود ملفات وعلامات عامة قابلة للتحقق، وليست حكمًا على جودة الكود أو ملاءمة المشروع. المعايير غير المعروفة لا تُحسب كنواقص، وقد لا تحتاج بعض أنواع المشاريع إلى كل المعايير.
+        The completeness score is an indicative signal based on verifiable public files and metadata—not a judgment of code quality or project suitability. Unknown checks are not counted as missing, and some project types may not need every criterion.
       </div>
 
       {s.partialTreeRepos > 0 && (
         <div className="notice">
-          تعذّر فحص شجرة الملفات كاملة في {s.partialTreeRepos} مستودعًا بسبب حد GitHub؛ عُرضت المعايير التي لم يمكن التحقق منها كـ «غير معروف» بدل اعتبارها مفقودة.
+          GitHub truncated the file tree for {s.partialTreeRepos} repositories. Checks that could not be verified are marked as unknown instead of missing.
         </div>
       )}
 
       {s.limited && (
-        <div className="notice">تم فحص محتوى أحدث {s.scannedRepos} مستودعًا فقط لتوفير طلبات GitHub. زد العدد من القائمة أعلاه إن أردت.</div>
+        <div className="notice">To conserve GitHub API requests, only the {s.scannedRepos} most recently updated repositories were scanned. You can increase the scan limit above.</div>
       )}
 
       <section className="card">
-        <h3>تاريخ تغيّر المؤشر خلال آخر 90 يومًا</h3>
+        <h3>Score history · Last 90 days</h3>
         {history.length ? (
           <div className="chart" dir="ltr">
             <ResponsiveContainer width="100%" height={220}>
@@ -119,32 +119,32 @@ export default function Analysis({ data }) {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="analyzedAt" tickFormatter={(value) => value.slice(0, 10)} />
                 <YAxis domain={[0, 100]} />
-                <Tooltip labelFormatter={(value) => new Date(value).toLocaleString()} formatter={(value) => [`${value}/100`, 'المؤشر']} />
-                <Line type="monotone" dataKey="avgScore" name="المؤشر" stroke="#6366f1" strokeWidth={2} />
+                <Tooltip labelFormatter={(value) => new Date(value).toLocaleString('en-US')} formatter={(value) => [`${value}/100`, 'Score']} />
+                <Line type="monotone" dataKey="avgScore" name="Score" stroke="#6366f1" strokeWidth={2} />
               </LineChart>
             </ResponsiveContainer>
           </div>
-        ) : <p className="muted">سيظهر الاتجاه بعد إجراء تحليلات جديدة. تُحفظ لقطة واحدة عند كل تحليل غير مخزّن مؤقتًا.</p>}
-        <p className="muted small">السجل مشترك على هذا الخادم، ويحتفظ بمتوسط الدرجة وعدد المستودعات فقط، دون حفظ تفاصيل المستودعات، لمدة 90 يومًا.</p>
+        ) : <p className="muted">Your score trend will appear after new analyses. One snapshot is saved for each uncached analysis.</p>}
+        <p className="muted small">This server-wide history stores only the average score and repository counts—not repository details—for 90 days.</p>
       </section>
 
       <section className="grid charts">
         <div className="card">
-          <h3>توزيع المشاريع حسب اللغة</h3>
+          <h3>Repositories by language</h3>
           <div className="chart" dir="ltr">
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
                 <Pie data={langs} dataKey="count" nameKey="name" outerRadius={95} label={(d) => d.name}>
                   {langs.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
-                <Tooltip formatter={(v, n) => [`${v} مستودع`, n]} />
+                <Tooltip formatter={(v, n) => [`${v} repositories`, n]} />
               </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         <div className="card">
-          <h3>الأكثر حصولًا على Stars</h3>
+          <h3>Most-starred repositories</h3>
           {data.topStarred.length ? (
             <div className="chart" dir="ltr">
               <ResponsiveContainer width="100%" height={280}>
@@ -159,11 +159,11 @@ export default function Analysis({ data }) {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          ) : <p className="muted">لا توجد مستودعات حاصلة على Stars بعد.</p>}
+          ) : <p className="muted">No repositories have stars yet.</p>}
         </div>
 
         <div className="card">
-          <h3>نسبة المستودعات المستوفية لكل معيار</h3>
+          <h3>Repositories passing each quality check</h3>
           <div className="chart" dir="ltr">
             <ResponsiveContainer width="100%" height={280}>
               <RadarChart data={coverageData(data.coverage)} outerRadius={90}>
@@ -171,22 +171,22 @@ export default function Analysis({ data }) {
                 <PolarAngleAxis dataKey="label" tick={{ fontSize: 11 }} />
                 <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
                 <Radar dataKey="value" name="%" stroke="#6366f1" fill="#6366f1" fillOpacity={0.35} />
-                <Tooltip formatter={(v) => [`${v}%`, 'مستوفٍ']} />
+                <Tooltip formatter={(v) => [`${v}%`, 'Passing']} />
               </RadarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         <div className="card">
-          <h3>توزيع درجات الاكتمال</h3>
+          <h3>Completeness score distribution</h3>
           <div className="chart" dir="ltr">
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={data.scoreBuckets}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="range" />
                 <YAxis allowDecimals={false} />
-                <Tooltip formatter={(v) => [`${v} مستودع`, 'العدد']} />
-                <Bar dataKey="count" name="العدد">
+                <Tooltip formatter={(v) => [`${v} repositories`, 'Count']} />
+                <Bar dataKey="count" name="Count">
                   {data.scoreBuckets.map((_, i) => <Cell key={i} fill={['#dc2626', '#d97706', '#65a30d', '#16a34a'][i]} />)}
                 </Bar>
               </BarChart>
@@ -195,14 +195,14 @@ export default function Analysis({ data }) {
         </div>
 
         <div className="card">
-          <h3>المستودعات المنشأة كل سنة</h3>
+          <h3>Repositories created by year</h3>
           <div className="chart" dir="ltr">
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={data.createdByYear}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="year" />
                 <YAxis allowDecimals={false} />
-                <Tooltip formatter={(v) => [`${v} مستودع`, 'العدد']} />
+                <Tooltip formatter={(v) => [`${v} repositories`, 'Count']} />
                 <Bar dataKey="count" fill="#06b6d4" />
               </BarChart>
             </ResponsiveContainer>
@@ -210,22 +210,22 @@ export default function Analysis({ data }) {
         </div>
 
         <div className="card">
-          <h3>أبرز النواقص</h3>
+          <h3>Key improvement opportunities</h3>
           <ul className="gaps">
-            <li><b>{s.missingReadme}</b> مستودع بدون README</li>
-            <li><b>{s.missingDescription}</b> بوصف ناقص أو غير واضح</li>
-            <li><b>{s.missingLicense}</b> بدون LICENSE</li>
-            <li><b>{s.missingTests}</b> بدون ملفات اختبار</li>
-            <li><b>{s.missingCI}</b> بدون CI</li>
+            <li><b>{s.missingReadme}</b> repositories without a README</li>
+            <li><b>{s.missingDescription}</b> with a missing or unclear description</li>
+            <li><b>{s.missingLicense}</b> without a license</li>
+            <li><b>{s.missingTests}</b> without test files</li>
+            <li><b>{s.missingCI}</b> without CI</li>
           </ul>
           {data.staleRepos.length > 0 && (
             <>
-              <h4>مشاريع لم تُحدَّث منذ فترة</h4>
+              <h4>Projects that have been inactive</h4>
               <ul className="stale">
                 {data.staleRepos.slice(0, 6).map((r) => (
                   <li key={r.name}>
                     <a href={r.url} target="_blank" rel="noreferrer">{r.name}</a>
-                    <span className="muted"> — {Math.round(r.idleDays / 30)} شهرًا</span>
+                    <span className="muted"> · {Math.round(r.idleDays / 30)} months</span>
                   </li>
                 ))}
               </ul>
@@ -233,7 +233,7 @@ export default function Analysis({ data }) {
           )}
           {data.topTopics.length > 0 && (
             <>
-              <h4>أكثر Topics استخدامًا</h4>
+              <h4>Most-used topics</h4>
               <div className="chips">{data.topTopics.map((t) => <span key={t.name} className="chip">{t.name} · {t.count}</span>)}</div>
             </>
           )}
@@ -242,11 +242,11 @@ export default function Analysis({ data }) {
 
       {data.recommendations.length > 0 && (
         <section className="card">
-          <h3>🛠 ما الذي تُصلحه أولًا؟ (مرتبة حسب النقاط التي ستكسبها)</h3>
+          <h3>🛠 What to improve first · Ranked by potential score gain</h3>
           <ol className="recs">
             {data.recommendations.map((r) => (
               <li key={r.key}>
-                <div><b>{LABELS[r.key]}</b> — {r.count} مستودع <span className="gain">+{r.gain} نقطة</span></div>
+                <div><b>{LABELS[r.key]}</b> — {r.count} repositories <span className="gain">+{r.gain} points</span></div>
                 <div className="muted small">{TIPS[r.key]}</div>
                 <div className="chips">
                   {r.repos.map((n) => <span key={n} className="chip" dir="ltr">{n}</span>)}
@@ -260,22 +260,22 @@ export default function Analysis({ data }) {
 
       <section className="card">
         <div className="table-head">
-          <h3>إحصائيات كل مستودع ({rows.length})</h3>
-          <input className="filter" dir="ltr" placeholder="بحث بالاسم…" value={query} onChange={(e) => setQuery(e.target.value)} />
-          <label><input type="checkbox" checked={onlyIssues} onChange={(e) => setOnlyIssues(e.target.checked)} /> ذات النواقص فقط</label>
-          <label><input type="checkbox" checked={hideForks} onChange={(e) => setHideForks(e.target.checked)} /> إخفاء الـ Forks</label>
+          <h3>Repository details ({rows.length})</h3>
+          <input className="filter" dir="ltr" placeholder="Search repositories…" aria-label="Search repositories" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <label><input type="checkbox" checked={onlyIssues} onChange={(e) => setOnlyIssues(e.target.checked)} /> Show repositories with issues only</label>
+          <label><input type="checkbox" checked={hideForks} onChange={(e) => setHideForks(e.target.checked)} /> Hide forks</label>
         </div>
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
-                <th onClick={() => toggleSort('name')}>المستودع{arrow('name')}</th>
-                <th>اللغة</th>
+                <th onClick={() => toggleSort('name')}>Repository{arrow('name')}</th>
+                <th>Language</th>
                 <th onClick={() => toggleSort('stars')}>⭐{arrow('stars')}</th>
                 <th onClick={() => toggleSort('forks')}>Forks{arrow('forks')}</th>
                 {CHECK_COLUMNS.map((k) => <th key={k}>{LABELS[k]}</th>)}
-                <th onClick={() => toggleSort('score')}>الدرجة{arrow('score')}</th>
-                <th onClick={() => toggleSort('pushedAt')}>آخر تحديث{arrow('pushedAt')}</th>
+                <th onClick={() => toggleSort('score')}>Score{arrow('score')}</th>
+                <th onClick={() => toggleSort('pushedAt')}>Last updated{arrow('pushedAt')}</th>
               </tr>
             </thead>
             <tbody>
@@ -285,8 +285,8 @@ export default function Analysis({ data }) {
                     <td>
                       <a href={r.url} target="_blank" rel="noreferrer" dir="ltr" onClick={(e) => e.stopPropagation()}>{r.name}</a>
                       {r.fork && <span className="tag">Fork</span>}
-                      {r.archived && <span className="tag">أرشيف</span>}
-                      {r.issues.length > 0 && <div className="muted small">ينقصه: {r.issues.map((k) => LABELS[k]).join('، ')}</div>}
+                      {r.archived && <span className="tag">Archived</span>}
+                      {r.issues.length > 0 && <div className="muted small">Needs: {r.issues.map((k) => LABELS[k]).join(', ')}</div>}
                     </td>
                     <td>{r.language || '-'}</td>
                     <td>{r.stars}</td>
@@ -300,7 +300,7 @@ export default function Analysis({ data }) {
                           <div className="bar"><div style={{ width: `${r.score}%`, background: scoreColor(r.score) }} /></div>
                           <span style={{ color: scoreColor(r.score) }}>{r.score} · {r.grade}</span>
                         </div>
-                      ) : <span className="muted">لم يُفحص</span>}
+                      ) : <span className="muted">Not scanned</span>}
                     </td>
                     <td className={r.idleDays > data.meta.staleDays && !r.archived ? 'stale-cell' : ''}>{fmtDate(r.pushedAt)}</td>
                   </tr>
@@ -309,10 +309,10 @@ export default function Analysis({ data }) {
                       <td colSpan={5 + CHECK_COLUMNS.length + 1}>
                         <div className="detail-grid">
                           {Object.keys(LABELS).map((k) => (
-                            <div key={k}><Badge state={r.checks[k]} /> {LABELS[k]} <span className="muted small">({r.checks[k] === 'unknown' ? 'غير محسوب' : `${r.points[k]}/${data.meta.weights[k]}`})</span></div>
+                            <div key={k}><Badge state={r.checks[k]} /> {LABELS[k]} <span className="muted small">({r.checks[k] === 'unknown' ? 'not scored' : `${r.points[k]}/${data.meta.weights[k]}`})</span></div>
                           ))}
                         </div>
-                        <p className="muted small">احتُسبت الدرجة من {r.scoreCoverage}% من أوزان المعايير الممكن التحقق منها.</p>
+                        <p className="muted small">The score uses {r.scoreCoverage}% of the criteria weights that could be verified.</p>
                         {r.issues.length > 0 && <ul className="small">{r.issues.map((k) => <li key={k}>{TIPS[k]}</li>)}</ul>}
                       </td>
                     </tr>
@@ -322,11 +322,11 @@ export default function Analysis({ data }) {
             </tbody>
           </table>
         </div>
-        <p className="muted small">اضغط على أي صف لعرض تفصيل الدرجة ونصائح التحسين.</p>
+        <p className="muted small">Select a row to see score details and improvement tips.</p>
       </section>
 
       <footer className="muted small">
-        الدرجة من 100: {Object.entries(data.meta.weights).map(([k, v]) => `${LABELS[k]} ${v}`).join(' · ')}. الـ Forks لا تُقيَّم لأنها ليست من عملك، والمستودعات المؤرشفة لا تُعاقَب على قلة النشاط.
+        Score out of 100: {Object.entries(data.meta.weights).map(([k, v]) => `${LABELS[k]} ${v}`).join(' · ')}. Forks are not scored, and archived repositories are not penalized for inactivity.
       </footer>
     </>
   );

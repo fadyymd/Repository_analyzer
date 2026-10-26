@@ -1,27 +1,27 @@
 export const COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#06b6d4', '#a855f7', '#ec4899', '#84cc16', '#14b8a6', '#f97316'];
 
 export const LABELS = {
-  description: 'الوصف',
+  description: 'Description',
   readme: 'README',
-  readmeDepth: 'محتوى README',
+  readmeDepth: 'README depth',
   license: 'LICENSE',
-  tests: 'الاختبارات',
+  tests: 'Tests',
   topics: 'Topics',
-  activity: 'النشاط',
+  activity: 'Activity',
   ci: 'CI',
   gitignore: '.gitignore',
 };
 
 export const TIPS = {
-  description: 'أضف وصفًا واضحًا من جملة كاملة (20 حرفًا فأكثر) يشرح ماذا يفعل المشروع.',
-  readme: 'أنشئ ملف README يشرح المشروع وطريقة التثبيت والتشغيل.',
-  readmeDepth: 'وسّع README: أضف لقطات شاشة وأمثلة استخدام وقسم تثبيت (500 بايت فأكثر).',
-  license: 'أضف ملف LICENSE (مثل MIT) من choosealicense.com.',
-  tests: 'أضف اختبارات أساسية (Vitest / Jest / pytest) لأهم الوظائف.',
-  topics: 'أضف Topics من صفحة المستودع ليسهل اكتشافه.',
-  activity: 'حدّث المشروع، أو أرشفه (Archive) إن توقف العمل عليه.',
-  ci: 'أضف GitHub Actions بسيط يشغّل الاختبارات والبناء عند كل Push.',
-  gitignore: 'أضف .gitignore لتجنب رفع node_modules والملفات الحساسة.',
+  description: 'Add a clear, complete sentence (20+ characters) explaining what the project does.',
+  readme: 'Add a README that explains the project and how to install and run it.',
+  readmeDepth: 'Expand the README with screenshots, usage examples, and setup instructions (500+ bytes).',
+  license: 'Add a LICENSE file (such as MIT) from choosealicense.com.',
+  tests: 'Add essential tests (Vitest, Jest, pytest, or similar) for the core functionality.',
+  topics: 'Add repository topics to make the project easier to discover.',
+  activity: 'Update the project regularly, or archive it if it is no longer maintained.',
+  ci: 'Add a GitHub Actions workflow to run tests and builds on each push.',
+  gitignore: 'Add a .gitignore file to keep node_modules and sensitive files out of version control.',
 };
 
 export const scoreColor = (s) => (s >= 80 ? '#16a34a' : s >= 50 ? '#d97706' : '#dc2626');
@@ -33,7 +33,7 @@ export async function fetchAnalysis(name, max = 30) {
   const res = await fetch(`/api/analyze/${encodeURIComponent(name)}?max=${max}`);
   let json = {};
   try { json = await res.json(); } catch { /* non-JSON error page */ }
-  if (!res.ok) throw new Error(json.error || 'فشل التحليل');
+  if (!res.ok) throw new Error(json.error || 'Analysis failed. Please try again.');
   return json;
 }
 
