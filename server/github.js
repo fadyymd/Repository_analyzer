@@ -26,7 +26,15 @@ function headers() {
  * (e.g. 404/409 for an empty repository tree).
  */
 export async function gh(path, { soft = [] } = {}) {
-  const res = await fetch(API + path, { headers: headers() });
+  let res;
+  try {
+    res = await fetch(API + path, { headers: headers(), signal: AbortSignal.timeout(15_000) });
+  } catch (err) {
+    if (err.name === 'TimeoutError' || err.name === 'AbortError') {
+      throw new GitHubError(504, 'انتهت مهلة الاتصال بـ GitHub. حاول مرة أخرى.');
+    }
+    throw new GitHubError(502, 'تعذّر الاتصال بـ GitHub. تحقق من الاتصال وحاول مرة أخرى.');
+  }
 
   const remaining = res.headers.get('x-ratelimit-remaining');
   if (remaining !== null) {
