@@ -34,8 +34,15 @@ export default function Compare() {
   const radar = res && Object.keys(LABELS).map((k) => ({ label: LABELS[k], [res[0].user.login]: res[0].coverage[k], [res[1].user.login]: res[1].coverage[k] }));
 
   return (
-    <>
-      <form onSubmit={run} className="search">
+    <section className="comparison">
+      <div className="comparison-heading">
+        <div>
+          <span className="eyebrow"><span className="eyebrow-line" /> مقارنة الحسابات</span>
+          <h2>أي الحسابين يحقق أداءً أفضل؟</h2>
+          <p>قارن مؤشرات المشاريع والنشاط والاكتمال جنبًا إلى جنب.</p>
+        </div>
+      </div>
+      <form onSubmit={run} className="search comparison-search">
         <input dir="ltr" value={a} onChange={(e) => setA(e.target.value)} placeholder="المستخدم الأول" aria-label="المستخدم الأول" />
         <span className="vs">VS</span>
         <input dir="ltr" value={b} onChange={(e) => setB(e.target.value)} placeholder="المستخدم الثاني" aria-label="المستخدم الثاني" />
@@ -97,6 +104,6 @@ export default function Compare() {
           </section>
         </>
       )}
-    </>
+    </section>
   );
 }
